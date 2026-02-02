@@ -1,0 +1,988 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>다예와 가람이의 똑똑 학습 놀이</title>
+<style>
+    /* 전체 기본 설정 */
+    * { box-sizing: border-box; }
+    body { font-family: 'Nanum Gothic', sans-serif; text-align: center; margin: 0; padding: 0; touch-action: manipulation; min-height: 100vh; overflow-x: hidden; background: #f0f4f8; }
+    .hidden { display: none !important; }
+    button { cursor: pointer; font-weight: bold; transition: all 0.2s; border: none; outline: none; -webkit-tap-highlight-color: transparent; }
+    button:active { transform: scale(0.95); }
+
+    /* 상단 통합 게이지 바 스타일 */
+    .progress-wrapper {
+        position: sticky; top: 0; background: white; padding: 10px 0; z-index: 100;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1); width: 100%;
+    }
+    .progress-container {
+        width: 90%; max-width: 500px; height: 26px; background-color: #e0e0e0;
+        border-radius: 13px; margin: 0 auto; overflow: hidden; border: 2px solid #fff;
+        position: relative;
+    }
+    .progress-bar { height: 100%; width: 0%; transition: width 0.5s ease-in-out; }
+    .progress-text {
+        position: absolute; width: 100%; text-align: center; font-size: 14px;
+        font-weight: bold; line-height: 26px; color: #333; top: 0; text-shadow: 1px 1px 0 white;
+    }
+
+    /* 칭찬 스티커 팝업 스타일 */
+    #sticker-modal, #history-modal {
+        position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+        display: flex; align-items: center; justify-content: center; z-index: 2000;
+    }
+    .modal-content {
+        background: white; padding: 30px; border-radius: 30px; width: 90%; max-width: 400px;
+        box-shadow: 0 0 20px rgba(255,255,255,0.5); border: 8px solid #ffeb3b;
+        max-height: 80vh; overflow-y: auto;
+    }
+    .modal-content h2 { color: #d81b60; margin-bottom: 15px; }
+    .close-modal-btn { 
+        background: #4caf50; color: white; padding: 12px 30px; border-radius: 20px; 
+        font-size: 18px; margin-top: 15px; box-shadow: 0 4px #2e7d32;
+    }
+
+    /* 기록장 스타일 */
+    .history-list { text-align: left; margin: 20px 0; border-collapse: collapse; width: 100%; }
+    .history-list th, .history-list td { padding: 10px; border-bottom: 1px solid #ddd; text-align: center; }
+    .history-list th { background: #f8f9fa; font-size: 14px; }
+
+    /* 통합 선택 화면 */
+    #integrated-start { position: fixed; inset: 0; background: #f0f4f8; z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+    .select-container { display: flex; gap: 20px; flex-wrap: wrap; justify-content: center; padding: 20px; }
+    .select-btn { width: 160px; height: 160px; border-radius: 30px; font-size: 22px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; color: white; box-shadow: 0 8px 0 rgba(0,0,0,0.1); }
+    .daye-btn { background: #ff80ab; box-shadow: 0 8px #d81b60; }
+    .garam-btn { background: #03a9f4; box-shadow: 0 8px #0288d1; }
+    .select-btn span { font-size: 50px; }
+
+    /* --- 다예 스타일 --- */
+    .daye-mode { background-color: #fdf2f8; }
+    .daye-mode h1 { color: #d81b60; font-size: 26px; text-shadow: 2px 2px #ffc1e3; margin: 15px 0; }
+    .daye-mode .menu-container { 
+        width: 100%; max-width: 500px; 
+        display: flex; flex-wrap: wrap; 
+        justify-content: center; align-content: center;
+        gap: 12px; padding: 10px; margin: 0 auto; 
+    }
+    .daye-mode .main-btn { 
+        width: 45%; height: 65px; 
+        font-size: 17px; border-radius: 20px; 
+        box-shadow: 0 4px rgba(0,0,0,0.1); color: #5d4037; 
+        display: flex; align-items: center; justify-content: center;
+    }
+    .daye-mode .kor-btn { background: #ffeb3b; box-shadow: 0 4px #fbc02d; }
+    .daye-mode .eng-btn { background: #c5e1a5; box-shadow: 0 4px #9ccc65; }
+    .daye-mode .math-btn { background: #b3e5fc; box-shadow: 0 4px #4fc3f7; }
+    .daye-mode .clock-btn { background: #e1bee7; box-shadow: 0 4px #ba68c8; }
+    .daye-mode .logic-btn { background: #ffccbc; box-shadow: 0 4px #ff8a65; }
+    .daye-mode .talk-btn { background: #4dd0e1; box-shadow: 0 4px #00acc1; }
+    .daye-mode .proverb-btn { background: #ffab91; box-shadow: 0 4px #d84315; }
+    .daye-mode .idiom-btn { background: #b39ddb; box-shadow: 0 4px #512da8; }
+
+    .daye-mode .math-sub-container { display: flex; flex-direction: column; gap: 15px; width: 90%; max-width: 320px; margin: 20px auto; }
+    .math-type-btn { height: 70px; font-size: 22px; border-radius: 20px; color: white; display: flex; align-items: center; justify-content: center; gap: 10px; }
+    .plus-btn { background: #ff7043; box-shadow: 0 6px #e64a19; }
+    .minus-btn { background: #4db6ac; box-shadow: 0 6px #00897b; }
+    .multi-btn { background: #9575cd; box-shadow: 0 6px #673ab7; }
+
+    .daye-mode .score-container { font-size: 18px; font-weight: bold; margin-bottom: 5px; color: #e91e63; background: white; display: inline-block; padding: 5px 15px; border-radius: 30px; box-shadow: 0 3px #f8bbd0; }
+    .daye-mode .quiz-box { margin: 10px auto; width: 92%; max-width: 340px; height: 140px; background: white; border: 6px solid #ff80ab; border-radius: 20px; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; padding: 5px; }
+    .daye-mode #quiz-canvas { width: 100%; height: 100%; }
+    .daye-mode #problem-text-daye { font-size: 26px; font-weight: bold; color: #0277bd; word-break: keep-all; line-height: 1.3; }
+    .daye-mode .choice-box { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; width: 100%; max-width: 500px; margin: 10px auto; }
+    .daye-mode .choice-btn { min-width: 60px; height: 55px; padding: 0 10px; font-size: 22px; border-radius: 12px; background: white; box-shadow: 0 4px #cfd8dc; }
+    .daye-mode .long-text-btn { width: 92%; height: auto; min-height: 55px; font-size: 18px; padding: 10px; word-break: keep-all; line-height: 1.2; }
+    .nav-btn { background:#90a4ae; padding:15px 25px; border-radius:20px; margin: 10px auto; font-size: 18px; color: white; display: block; width: 150px; }
+
+    .daye-mode .correct { background-color: #69f0ae !important; color: white !important; box-shadow: 0 6px #00c853 !important; }
+    .daye-mode .wrong { background-color: #ff8a80 !important; color: white !important; box-shadow: 0 6px #d50000 !important; opacity: 0.6; }
+
+    /* --- 가람 스타일 --- */
+    .garam-mode { background:#f0f9ff; }
+    .garam-mode h1 { color:#0288d1; font-size:26px; text-shadow:2px 2px #b3e5fc; margin:15px 0;}
+    .garam-mode .menu-container { max-width:500px; margin:auto; display:flex; flex-direction:column; gap:15px; padding: 15px; }
+    .garam-mode .main-btn { height:75px; font-size:22px; border-radius:20px; color:white; display: flex; align-items: center; justify-content: center; gap: 10px; }
+    .garam-mode .kor-btn { background:#ff7043; box-shadow:0 6px #e64a19;}
+    .garam-mode .math-btn { background:#66bb6a; box-shadow:0 6px #388e3c;}
+    .garam-mode .abc-btn { background:#ab47bc; box-shadow:0 6px #7b1fa2;}
+    .garam-mode .score-container { font-size:20px; font-weight:bold; margin:10px; color:#0288d1; background:white; padding:8px 20px; border-radius:30px;}
+    .garam-mode .quiz-box { margin:15px auto; width:90%; max-width:350px; height:160px; background:white; border:6px solid #03a9f4; border-radius:25px; display:flex; flex-direction:column; align-items:center; justify-content:center;}
+    .garam-mode #emoji-display-garam { font-size:70px; }
+    .garam-mode #problem-text-garam { font-size:32px; font-weight:bold; color:#333;}
+    .garam-mode .choice-box { max-width:350px; margin:auto; display:flex; flex-direction:column; gap:10px;}
+    .garam-mode .choice-btn { height:60px; font-size:22px; border-radius:15px; background:white; box-shadow:0 4px #cfd8dc;}
+    .exit-btn { background:#607d8b; width: 90%; padding:15px 25px; border-radius:20px; margin: 10px auto; font-size: 18px; color: white; display: block; }
+</style>
+</head>
+<body>
+
+<div id="integrated-start">
+    <h1 style="font-size: 32px; color: #333; margin-bottom: 40px;">누가 공부할까요?</h1>
+    <div class="select-container">
+        <button class="select-btn daye-btn" onclick="chooseUser('daye')">
+            <span>🎀</span>다예 놀이
+        </button>
+        <button class="select-btn garam-btn" onclick="chooseUser('garam')">
+            <span>🌟</span>가람 놀이
+        </button>
+    </div>
+    <button onclick="showHistory()" style="margin-top: 40px; background: #90a4ae; color: white; padding: 15px 30px; border-radius: 50px; font-size: 18px; box-shadow: 0 4px #78909c;">🏆 우리 아이들 기록장</button>
+</div>
+
+<!-- 칭찬 스티커 팝업 -->
+<div id="sticker-modal" class="hidden">
+    <div class="modal-content">
+        <h2>🌈 대단해요! 🌈</h2>
+        <p style="font-size: 20px; font-weight: bold;">오늘의 공부를 모두 마쳤어요!</p>
+        <span style="font-size:80px; margin: 20px 0; display: block;">🎫</span>
+        <p style="font-size: 18px; color: #333;">칭찬 스티커 하나 획득!</p>
+        <button class="close-modal-btn" onclick="closeStickerModal()">참 잘했어요 (닫기)</button>
+    </div>
+</div>
+
+<!-- 기록 확인 모달 -->
+<div id="history-modal" class="hidden">
+    <div class="modal-content" style="max-width: 500px;">
+        <h2>📊 날짜별 점수 기록</h2>
+        <table class="history-list">
+            <thead>
+                <tr>
+                    <th>날짜</th>
+                    <th>🎀 다예</th>
+                    <th>🌟 가람</th>
+                </tr>
+            </thead>
+            <tbody id="history-body">
+                <!-- JS로 기록 채워짐 -->
+            </tbody>
+        </table>
+        <button class="close-modal-btn" onclick="document.getElementById('history-modal').classList.add('hidden')">기록창 닫기</button>
+        <button onclick="clearHistory()" style="background: none; color: #aaa; margin-top: 20px; font-size: 12px; text-decoration: underline;">기록 전체 삭제</button>
+    </div>
+</div>
+
+<!-- 다예 섹션 -->
+<div id="daye-section" class="daye-mode hidden">
+    <div class="progress-wrapper">
+        <div class="progress-container">
+            <div id="progress-bar-daye" class="progress-bar" style="background: linear-gradient(90deg, #ff80ab, #d81b60);"></div>
+            <div id="progress-text-daye" class="progress-text">다예 전체 목표: 0%</div>
+        </div>
+    </div>
+    <div id="menu-daye">
+        <h1>🎀 우리 다예 최고! 🎀</h1>
+        <div class="menu-container">
+            <button class="main-btn kor-btn" onclick="startK()">📘 한글 놀이</button>
+            <button class="main-btn eng-btn" onclick="startE()">🔤 영어 단어</button>
+            <button class="main-btn talk-btn" onclick="startTalk()">🗣️ 영어 회화</button>
+            <button class="main-btn math-btn" onclick="showMathMenu()">🔢 수학 천재</button>
+            <button class="main-btn clock-btn" onclick="startC()">⏰ 시계 보기</button>
+            <button class="main-btn logic-btn" onclick="startL()">🧩 규칙 찾기</button>
+            <button class="main-btn proverb-btn" onclick="startP()">📜 속담 놀이</button>
+            <button class="main-btn idiom-btn" onclick="startS()">🏮 사자성어</button>
+            <button class="exit-btn" onclick="exitToMain()" style="margin-top:20px;">👋 처음으로 돌아가기</button>
+        </div>
+    </div>
+    <div id="math-menu-daye" class="hidden">
+        <h1>🔢 어떤 수학을 할까?</h1>
+        <div class="math-sub-container">
+            <button class="math-type-btn plus-btn" onclick="startMathType('+')"><span>➕</span> 더하기</button>
+            <button class="math-type-btn minus-btn" onclick="startMathType('-')"><span>➖</span> 빼기</button>
+            <button class="math-type-btn multi-btn" onclick="startMathType('×')"><span>✖️</span> 곱하기</button>
+            <button class="nav-btn" onclick="goHomeDaye()" style="width: 100%;">🏠 뒤로가기</button>
+        </div>
+    </div>
+    <div id="game-screen-daye" class="hidden">
+        <h1 id="game-title-daye" style="font-size: 20px;">게임 중</h1>
+        <div class="score-container">과목 점수: <span id="game-score-daye">0</span></div>
+        <div id="quiz-area-daye">
+            <div class="quiz-box" id="q-box-daye">
+                <canvas id="quiz-canvas" width="300" height="150"></canvas>
+                <div id="problem-text-daye" class="hidden"></div>
+            </div>
+            <div id="answer-display-daye" style="font-size: 20px; margin: 5px; min-height: 30px; color: #d81b60; border-bottom: 2px solid #ff80ab; padding: 0 10px;"></div>
+            <div class="choice-box" id="choices-daye"></div>
+        </div>
+        <div id="message-daye" style="height: 25px; font-size: 18px; font-weight: bold; color: #ff4081; margin-top: 5px;"></div>
+        <button class="nav-btn" onclick="goHomeDaye()">🏠 메뉴로</button>
+    </div>
+</div>
+
+<!-- 가람 섹션 -->
+<div id="garam-section" class="garam-mode hidden">
+    <div class="progress-wrapper">
+        <div class="progress-container">
+            <div id="progress-bar-garam" class="progress-bar" style="background: linear-gradient(90deg, #4fc3f7, #0288d1);"></div>
+            <div id="progress-text-garam" class="progress-text">가람 전체 목표: 0%</div>
+        </div>
+    </div>
+    <div id="menu-garam">
+        <h1>🌟 우리 가람이 화이팅!</h1>
+        <div class="menu-container">
+            <button class="main-btn kor-btn" onclick="initGameGaram('K')">🦁 한글 단어</button>
+            <button class="main-btn math-btn" onclick="initGameGaram('M')">🔢 더하기 대장</button>
+            <button class="main-btn abc-btn" onclick="initGameGaram('A')">🔤 알파벳 박사</button>
+            <button class="exit-btn" onclick="exitToMain()">👋 처음으로 돌아가기</button>
+        </div>
+    </div>
+    <div id="game-screen-garam" class="hidden">
+        <div class="score-container">과목 점수: <span id="game-score-garam">0</span></div>
+        <div class="quiz-box">
+            <div id="emoji-display-garam"></div>
+            <div id="problem-text-garam"></div>
+        </div>
+        <div class="choice-box" id="choices-garam"></div>
+        <div id="message-garam" style="margin-top:10px; font-weight:bold; color:#0288d1; height: 25px;"></div>
+        <button class="nav-btn" onclick="goHomeGaram()">🏠 메뉴로</button>
+    </div>
+</div>
+
+<script>
+/* -----------------------------------------------------------
+   [데이터 영역] 다예 회화 150문장 & 수정된 속담/사자성어 (생략 없이 이전 최종본 데이터 유지)
+----------------------------------------------------------- */
+const masterData = [
+    { w:"사과", e:"apple", i:"🍎"}, { w:"바나나", e:"banana", i:"🍌"}, { w:"포도", e:"grape", i:"🍇"},
+    { w:"딸기", e:"strawberry", i:"🍓"}, { w:"수박", e:"watermelon", i:"🍉"}, { w:"복숭아", e:"peach", i:"🍑"},
+    { w:"체리", e:"cherry", i:"🍒"}, { w:"레몬", e:"lemon", i:"🍋"}, { w:"오렌지", e:"orange", i:"🍊"},
+    { w:"배", e:"pear", i:"🍐"}, { w:"강아지", e:"dog", i:"🐶"}, { w:"고양이", e:"cat", i:"🐱"}, 
+    { w:"토끼", e:"rabbit", i:"🐰"}, { w:"호랑이", e:"tiger", i:"🐯"}, { w:"사자", e:"lion", i:"🦁"}, 
+    { w:"코끼리", e:"elephant", i:"🐘"}, { w:"기린", e:"giraffe", i:"🦒"}, { w:"원숭이", e:"monkey", i:"🐒"}, 
+    { w:"곰", e:"bear", i:"🐻"}, { w:"판다", e:"panda", i:"🐼"}, { w:"돼지", e:"pig", i:"🐷"}, 
+    { w:"소", e:"cow", i:"🐮"}, { w:"말", e:"horse", i:"🐴"}, { w:"양", e:"sheep", i:"🐑"}, 
+    { w:"염소", e:"goat", i:"🐐"}, { w:"닭", e:"chicken", i:"🐔"}, { w:"오리", e:"duck", i:"🦆"}, 
+    { w:"물고기", e:"fish", i:"🐟"}, { w:"상어", e:"shark", i:"🦈"}, { w:"고래", e:"whale", i:"🐳"}, 
+    { w:"문어", e:"octopus", i:"🐙"}, { w:"나비", e:"butterfly", i:"🦋"}, { w:"벌", e:"bee", i:"🐝"},
+    { w:"자동차", e:"car", i:"🚗"}, { w:"버스", e:"bus", i:"🚌"}, { w:"트럭", e:"truck", i:"🚚"},
+    { w:"기차", e:"train", i:"🚆"}, { w:"비행기", e:"airplane", i:"✈️"}, { w:"배", e:"ship", i:"🚢"},
+    { w:"자전거", e:"bicycle", i:"🚲"}, { w:"오토바이", e:"motorcycle", i:"🏍️"},
+    { w:"해", e:"sun", i:"☀️"}, { w:"달", e:"moon", i:"🌙"}, { w:"별", e:"star", i:"⭐"},
+    { w:"구름", e:"cloud", i:"☁️"}, { w:"비", e:"rain", i:"🌧️"}, { w:"눈", e:"snow", i:"❄️"},
+    { w:"번개", e:"lightning", i:"⚡"}, { w:"무지개", e:"rainbow", i:"🌈"}, { w:"산", e:"mountain", i:"⛰️"},
+    { w:"바다", e:"sea", i:"🌊"}, { w:"나무", e:"tree", i:"🌳"}, { w:"꽃", e:"flower", i:"🌸"},
+    { w:"풀", e:"grass", i:"🌱"}, { w:"밥", e:"rice", i:"🍚"}, { w:"빵", e:"bread", i:"🍞"}, 
+    { w:"국", e:"soup", i:"🥣"}, { w:"라면", e:"ramen", i:"🍜"}, { w:"피자", e:"pizza", i:"🍕"}, 
+    { w:"햄버거", e:"hamburger", i:"🍔"}, { w:"케이크", e:"cake", i:"🎂"}, { w:"아이스크림", e:"ice cream", i:"🍦"},
+    { w:"집", e:"house", i:"🏠"}, { w:"학교", e:"school", i:"🏫"}, { w:"의자", e:"chair", i:"🪑"},
+    { w:"책상", e:"desk", i:"📚"}, { w:"연필", e:"pencil", i:"✏️"}, { w:"가방", e:"bag", i:"🎒"},
+    { w:"신발", e:"shoes", i:"👟"}, { w:"모자", e:"hat", i:"🧢"}, { w:"시계", e:"watch", i:"⌚"},
+    { w:"문", e:"door", i:"🚪"}, { w:"공", e:"ball", i:"⚽"}, { w:"풍선", e:"balloon", i:"🎈"}, 
+    { w:"로봇", e:"robot", i:"🤖"}, { w:"선물", e:"gift", i:"🎁"}, { w:"우산", e:"umbrella", i:"☂️"}, 
+    { w:"카메라", e:"camera", i:"📷"}
+];
+
+const talkData = [
+    {q:"안녕 (만날 때)", a:"Hello"}, {q:"안녕 (헤어질 때)", a:"Bye"}, {q:"좋은 아침이야", a:"Good morning"},
+    {q:"좋은 밤 되세요", a:"Good night"}, {q:"고마워", a:"Thank you"}, {q:"정말 고마워", a:"Thank you so much"},
+    {q:"미안해", a:"I am sorry"}, {q:"괜찮아", a:"It is okay"}, {q:"천만에요", a:"You are welcome"},
+    {q:"이름이 뭐니?", a:"What is your name?"}, {q:"나는 다예야", a:"I am Daye"}, {q:"나는 8살이야", a:"I am eight years old"},
+    {q:"만나서 반가워", a:"Nice to meet you"}, {q:"어떻게 지내니?", a:"How are you?"}, {q:"기분 최고야!", a:"I am very good"},
+    {q:"너는 어때?", a:"How about you?"}, {q:"나중에 봐", a:"See you later"}, {q:"행운을 빌어", a:"Good luck"},
+    {q:"실례합니다", a:"Excuse me"}, {q:"나 여기 있어", a:"I am here"}, {q:"배고파요", a:"I am hungry"},
+    {q:"목말라요", a:"I am thirsty"}, {q:"피곤해요", a:"I am tired"}, {q:"졸려요", a:"I am sleepy"},
+    {q:"행복해요", a:"I am happy"}, {q:"슬퍼요", a:"I am sad"}, {q:"화나요", a:"I am angry"},
+    {q:"무서워요", a:"I am scared"}, {q:"신나요!", a:"I am excited!"}, {q:"심심해요", a:"I am bored"},
+    {q:"아파요", a:"I am sick"}, {q:"추워요", a:"I am cold"}, {q:"더워요", a:"I am hot"},
+    {q:"배불러요", a:"I am full"}, {q:"자랑스러워요", a:"I am proud"}, {q:"놀랐어요!", a:"I am surprised!"},
+    {q:"괜찮아질 거야", a:"It will be okay"}, {q:"너 괜찮니?", a:"Are you okay?"}, {q:"무슨 일이야?", a:"What is wrong?"},
+    {q:"가자!", a:"Let's go!"}, {q:"놀자!", a:"Let's play!"}, {q:"먹자!", a:"Let's eat!"},
+    {q:"그만해!", a:"Stop it!"}, {q:"기다려 줘", a:"Wait for me"}, {q:"이리 와", a:"Come here"},
+    {q:"조심해", a:"Be careful"}, {q:"도와줘!", a:"Help me!"}, {q:"일어나", a:"Wake up"},
+    {q:"서둘러", a:"Hurry up"}, {q:"들어와", a:"Come in"}, {q:"앉으세요", a:"Sit down, please"},
+    {q:"일어서세요", a:"Stand up, please"}, {q:"조용히 해 줘", a:"Be quiet, please"}, {q:"내 말 들어봐", a:"Listen to me"},
+    {q:"나를 봐", a:"Look at me"}, {q:"따라 해봐", a:"Repeat after me"}, {q:"손 씻어", a:"Wash your hands"},
+    {q:"양치해", a:"Brush your teeth"}, {q:"신발 신어", a:"Put on your shoes"}, {q:"도와줄 수 있니?", a:"Can you help me?"},
+    {q:"이게 뭐야?", a:"What is this?"}, {q:"저게 뭐야?", a:"What is that?"}, {q:"어디 있어?", a:"Where is it?"},
+    {q:"얼마예요?", a:"How much is it?"}, {q:"무슨 색이야?", a:"What color is it?"}, {q:"몇 시야?", a:"What time is it?"},
+    {q:"어디 가니?", a:"Where are you going?"}, {q:"뭐 하니?", a:"What are you doing?"}, {q:"나도 가도 돼?", a:"Can I come?"},
+    {q:"하나 더 주실래요?", a:"Can I have one more?"}, {q:"화장실 가도 돼요?", a:"May I go to the bathroom?"},
+    {q:"이거 써도 돼요?", a:"May I use this?"}, {q:"물 좀 주실래요?", a:"May I have some water?"}, {q:"준비됐니?", a:"Are you ready?"},
+    {q:"확실해?", a:"Are you sure?"}, {q:"알고 있니?", a:"Do you know?"}, {q:"나 좀 도와줄래?", a:"Would you help me?"},
+    {q:"무슨 뜻이야?", a:"What do you mean?"}, {q:"좋아하니?", a:"Do you like it?"}, {q:"내 가방 어디 있어?", a:"Where is my bag?"},
+    {q:"엄마 어디 계셔?", a:"Where is Mom?"}, {q:"비 오니?", a:"Is it raining?"}, {q:"몇 명이야?", a:"How many people?"},
+    {q:"누구야?", a:"Who is it?"}, {q:"사과 좋아해", a:"I like apples"}, {q:"분홍색 좋아해", a:"I like pink"},
+    {q:"수영 좋아해", a:"I like swimming"}, {q:"피자 먹고 싶어", a:"I want pizza"}, {q:"우유 마시고 싶어", a:"I want some milk"},
+    {q:"장난감 사고 싶어", a:"I want a toy"}, {q:"나 이거 좋아", a:"I love this"}, {q:"안 좋아해", a:"I don't like this"},
+    {q:"잘 모르겠어", a:"I don't know"}, {q:"나도 그렇게 생각해", a:"I think so"}, {q:"멋지다!", a:"That is cool!"},
+    {q:"예쁘다!", a:"That is pretty!"}, {q:"맛있다!", a:"It is yummy!"}, {q:"매워요", a:"It is spicy"},
+    {q:"달콤해요", a:"It is sweet"}, {q:"좋은 생각이야", a:"That is a good idea"}, {q:"말도 안 돼!", a:"No way!"},
+    {q:"당연하지", a:"Of course"}, {q:"재미있다!", a:"It is fun!"}, {q:"어려워요", a:"It is hard"},
+    {q:"우리는 가족이야", a:"We are family"}, {q:"우리 엄마야", a:"She is my mom"}, {q:"우리 아빠야", a:"He is my dad"},
+    {q:"내 남동생이야", a:"He is my brother"}, {q:"내 여동생이야", a:"She is my sister"}, {q:"나 친구 있어", a:"I have a friend"},
+    {q:"너 예쁘다", a:"You are pretty"}, {q:"친절하시네요", a:"You are kind"}, {q:"사랑해", a:"I love you"},
+    {q:"보고 싶어", a:"I miss you"}, {q:"내 거 아니야", a:"It is not mine"}, {q:"네 거야", a:"It is yours"},
+    {q:"누구 거니?", a:"Whose is this?"}, {q:"함께 놀자", a:"Let's play together"}, {q:"생일 축하해!", a:"Happy Birthday!"},
+    {q:"날씨 좋다", a:"The weather is nice"}, {q:"비가 와요", a:"It is raining"}, {q:"눈이 와요", a:"It is snowing"},
+    {q:"바람 불어요", a:"It is windy"}, {q:"구름 꼈어요", a:"It is cloudy"}, {q:"해가 떴어요", a:"It is sunny"},
+    {q:"학교 가자", a:"Go to school"}, {q:"집에 가자", a:"Go home"}, {q:"공원에 가자", a:"Go to the park"},
+    {q:"TV 봐도 돼요?", a:"Can I watch TV?"}, {q:"게임 해도 돼요?", a:"Can I play a game?"}, {q:"나 다 했어", a:"I am done"},
+    {q:"숙제 해야 돼", a:"I should do my homework"}, {q:"책 읽어 줘", a:"Read me a book"}, {q:"잘 시간이야", a:"It is time to sleep"},
+    {q:"아침 먹자", a:"Let's eat breakfast"}, {q:"점심 먹자", a:"Let's eat lunch"}, {q:"저녁 맛있게 먹어", a:"Enjoy your dinner"},
+    {q:"밖으로 나가자", a:"Let's go outside"}, {q:"안으로 들어와", a:"Come inside"}, {q:"창문 열어 줘", a:"Open the window"},
+    {q:"문 닫아 줘", a:"Close the door"}, {q:"불 켜 줘", a:"Turn on the light"}, {q:"불 꺼 줘", a:"Turn off the light"},
+    {q:"조심해!", a:"Watch out!"}, {q:"문제없어", a:"No problem"}, {q:"정말이야?", a:"Really?"},
+    {q:"기억 안 나", a:"I don't remember"}, {q:"잘했어!", a:"Well done!"}
+];
+
+const proverbData = [
+    {q:"말을 조심해야 한다는 뜻", a:"낮말은 새가 듣고 밤말은 쥐가 듣는다"},
+    {q:"작은 힘도 모이면 큰 힘이 됨", a:"티끌 모아 태산"},
+    {q:"이미 일이 끝난 뒤에 후회함", a:"소 잃고 외양간 고친다"},
+    {q:"매우 하기 쉬운 일", a:"누워서 떡 먹기"},
+    {q:"좋은 말을 해야 좋은 대답을 들음", a:"가는 말이 고와야 오는 말이 곱다"},
+    {q:"어릴 때 습관은 평생 간다", a:"세 살 버릇 여든까지 간다"},
+    {q:"아무리 먼 길도 시작이 중요함", a:"천 리 길도 한 걸음부터"},
+    {q:"힘을 합치면 쉬워짐", a:"백지장도 맞들면 낫다"},
+    {q:"오래 소식 없으면 오히려 좋은 일", a:"무소식이 희소식"},
+    {q:"급할수록 서두르지 말아야 함", a:"급할수록 돌아가라"},
+    {q:"정성을 다하면 결국 이룸", a:"지성이면 감천이다"},
+    {q:"말하면 나타난난다는 뜻", a:"호랑이도 제 말 하면 온다"},
+    {q:"일은 배부른 뒤에 해야 즐겁다", a:"금강산도 식후경"},
+    {q:"말 한마디가 큰 결과를 가져옴", a:"말이 씨가 된다"},
+    {q:"겉과 속이 다름", a:"겉 다르고 속 다르다"},
+    {q:"서로 도우면 어려움이 줄어듦", a:"십시일반"},
+    {q:"이미 알고 있는 사실도 물어봄", a:"아는 길도 물어가라"},
+    {q:"쓸데없는 걱정을 함", a:"기우"},
+    {q:"모든 일에는 이유가 있음", a:"아니 땐 굴뚝에 연기 나랴"},
+    {q:"사소한 차이", a:"종이 한 장 차이"},
+    {q:"운이 좋아 성공함", a:"하늘이 도왔다"},
+    {q:"시작이 반이라는 뜻", a:"시작이 반이다"},
+    {q:"고생 끝에 즐거움이 옴", a:"고생 끝에 낙이 온다"},
+    {q:"가까운 이웃이 먼 친척보다 낫다", a:"이웃 사촌"},
+    {q:"나쁜 짓을 하면 반드시 벌을 받음", a:"꼬리가 길면 밟힌다"},
+    {q:"작은 차이가 큰 결과를 만듦", a:"가랑비에 옷 젖는 줄 모른다"},
+    {q:"남의 일에 참견함", a:"감 놓아라 배 놓아라"},
+    {q:"작은 일에 정성을 다함", a:"작은 고추가 맵다"},
+    {q:"같은 처지의 사람끼리 도움", a:"초록은 동색"},
+    {q:"아무리 가르쳐도 모름", a:"쇠귀에 경 읽기"},
+    {q:"자기의 허물을 모름", a:"똥 묻은 개가 겨 묻은 개 나무란다"},
+    {q:"말 한마디로 빚을 갚음", a:"말 한마디에 천 냥 빚도 갚는다"},
+    {q:"경험이 없는 사람은 무서운 게 없음", a:"하룻강아지 범 무서운 줄 모른다"},
+    {q:"나쁜 일이 지나면 좋은 일이 옴", a:"쥐구멍에도 볕 들 날 있다"},
+    {q:"한 번의 실수가 큰 화를 부름", a:"원숭이도 나무에서 떨어진다"},
+    {q:"겉모양만 보고 판단하지 마라", a:"뚝배기보다 장맛이다"},
+    {q:"매우 드문 일", a:"가뭄에 콩 나듯"},
+    {q:"자기 능력을 과대평가함", a:"우물 안 개구리"},
+    {q:"어려운 일을 겪어야 단단해짐", a:"비 온 뒤에 땅이 굳어진다"},
+    {q:"좋은 일은 소문이 빨리 남", a:"발 없는 말이 천 리 간다"},
+    {q:"남의 것이 더 좋아 보임", a:"남의 떡이 설보다 크다"},
+    {q:"귀한 것도 흔하면 대접 못 받음", a:"개똥도 약에 쓰려면 없다"},
+    {q:"많을수록 좋음", a:"다다익선"},
+    {q:"윗사람이 잘해야 아랫사람도 잘함", a:"윗물이 맑아야 아랫물이 맑다"},
+    {q:"어려울 때 도와주는 친구가 진짜", a:"어려울 때 친구가 참된 친구"},
+    {q:"정성 들인 일은 헛되지 않음", a:"공든 탑이 무너지랴"},
+    {q:"모르는 게 차라리 편함", a:"모르는 게 약이다"},
+    {q:"남의 불행을 보고 기뻐함", a:"사촌이 땅을 사면 배가 아프다"},
+    {q:"한 우물을 파야 성공함", a:"우물을 파도 한 우물을 파라"},
+    {q:"준비가 철저하면 걱정이 없음", a:"유비무환"},
+    {q:"한 번 배운 기술은 평생 감", a:"배워서 남 주나"},
+    {q:"겉만 번드르르하고 실속이 없음", a:"빛 좋은 개살구"},
+    {q:"아주 친밀한 사이", a:"바늘 가는 데 실 간다"},
+    {q:"작은 이익을 탐내다 큰 손해를 봄", a:"혹 떼러 갔다가 혹 붙여 온다"},
+    {q:"남의 잘못을 비웃음", a:"겨 묻은 개가 똥 묻은 개 나무란다"},
+    {q:"실행이 가장 중요함", a:"구슬이 서 말이라도 꿰어야 보배"},
+    {q:"가까운 사이일수록 예의를 지켜야 함", a:"친할수록 예의를 지켜라"},
+    {q:"노력 없이 얻으려 함", a:"심지도 않은 데서 거두려 한다"},
+    {q:"자기 앞가림도 못함", a:"내 코가 석 자"},
+    {q:"아주 가까운 거리", a:"엎어지면 코 닿을 데"},
+    {q:"시간이 해결해 줌", a:"세월이 약이다"},
+    {q:"바빠도 순서가 있다는 뜻", a:"바빠도 바늘허리 매어 못 쓴다"},
+    {q:"노력한 만큼 결과가 나옴", a:"콩 심은 데 콩 나고 팥 심은 데 팥 난다"},
+    {q:"자기가 한 일에 책임을 짐", a:"자업자득"},
+    {q:"가까운 곳에서 일어난 일을 모름", a:"등잔 밑이 어둡다"},
+    {q:"오는 정이 있어야 가는 정이 있음", a:"가는 정이 있어야 오는 정이 있다"},
+    {q:"아능 일도 확인해봐야 함", a:"돌다리도 두드려 보고 건너라"},
+    {q:"믿었던 사람에게 배신당함", a:"믿는 도끼에 발등 찍힌다"},
+    {q:"작은 것보다 덤이 더 큼", a:"배보다 배꼽이 더 크다"},
+    {q:"아는 게 없는 사람이 더 시끄러움", a:"빈 수레가 요란하다"},
+    {q:"오래 보고 들으면 저절로 배움", a:"서당 개 삼 년이면 풍월을 읊는다"},
+    {q:"자기 마음에 들면 다 좋아 보임", a:"제 눈에 안경"},
+    {q:"정신만 차리면 위기도 극복함", a:"호랑이에게 물려가도 정신만 차리면 산다"},
+    {q:"개천에서 인물 난다", a:"개천에서 용 난다"},
+    {q:"다 완성된 일을 망쳐 놓음", a:"다 된 밥에 재 뿌리기"},
+    {q:"매우 하기 쉬운 일", a:"땅 짚고 헤엄치기"},
+    {q:"갑작스럽게 닥친 불행", a:"마른하늘에 날벼락"},
+    {q:"훌륭한 사람일수록 겸손함", a:"벼는 익을수록 고개를 숙인다"},
+    {q:"어려운 일이 겹쳐서 일어남", a:"산 넘어 산"},
+    {q:"매우 아주 쉬운 일", a:"식은 죽 먹기"},
+    {q:"임시방편으로 겨우 해결함", a:"언 발에 오줌 누기"},
+    {q:"안 될 일은 애초에 하지 마라", a:"오르지 못할 나무는 쳐다보지도 마라"},
+    {q:"상황이 나빠도 정직하게 말함", a:"입은 삐뚤어져도 말은 바로 해라"},
+    {q:"한 번 놀라면 계속 겁냄", a:"자라 보고 놀란 가슴 솥뚜껑 보고 놀란다"},
+    {q:"체구는 작아도 아주 야무짐", a:"작은 고추가 맵다"},
+    {q:"엉뚱한 곳에서 화풀이를 함", a:"종로에서 뺨 맞고 한강에서 화풀이한다"},
+    {q:"애써 한 일을 남에게 뺏김", a:"죽 쒀서 개 준다"},
+    {q:"순한 사람도 화나면 무서움", a:"지렁이도 밟으면 꿈틀한다"},
+    {q:"작은 것이 모여 큰 것이 됨", a:"티끌 모아 태산"},
+    {q:"무슨 일이든 다 이유가 있음", a:"핑계 없는 무덤 없다"},
+    {q:"하나를 보면 전체를 ", a:"하나를 보면 열을 안다"},
+    {q:"아무리 어려워도 살 길이 있음", a:"하늘이 무너져도 솟아날 구멍은 있다"},
+    {q:"소식이 전혀 없는 사람", a:"함흥차사"},
+    {q:"힘든 시기가 지나면 희망이 옴", a:"해 뜨기 전이 가장 어둡다"},
+    {q:"미련 없이 쉽게 버림", a:"헌 신짝 버리듯"},
+    {q:"강한 자가 없으면 약한 자가 대장임", a:"호랑이 없는 골에 토끼가 왕이다"}
+];
+
+const idiomData = [
+    {q:"한 번에 두 가지 이익을 얻음", a:"일석이조"}, {q:"큰 인물이 늦게 성공함", a:"대기만성"},
+    {q:"엉뚱한 대답을 함", a:"동문서답"}, {q:"결심이 오래가지 않음", a:"작심삼일"},
+    {q:"미리 준비하면 걱정이 없음", a:"유비무환"}, {q:"나쁜 일이 겹침", a:"설상가상"},
+    {q:"실력이 서로 비슷함", a:"막상막하"}, {q:"어릴 때부터 친한 친구", a:"죽마고우"},
+    {q:"서로 마음이 통함", a:"이심전심"}, {q:"스스로 포기함", a:"자포자기"},
+    {q:"고생 끝에 좋은 일이 옴", a:"고진감래"}, {q:"많을수록 좋음", a:"다다익선"},
+    {q:"기쁨과 슬픔을 함께함", a:"동고동락"}, {q:"죽을 고비에서 살아남", a:"구사일생"},
+    {q:"앞날이 매우 밝음", a:"전도양양"}, {q:"잘못을 저질러 스스로 화를 부름", a:"자업자득"},
+    {q:"서로 돕고 의지함", a:"상부상조"}, {q:"바람 앞의 등불처럼 위태함", a:"풍전등화"},
+    {q:"매우 위험한 상황", a:"백척간두"}, {q:"겉과 속이 다름", a:"표리부동"},
+    {q:"일이 아주 잘 풀림", a:"만사형통"}, {q:"화가 바뀌어 복이 됨", a:"전화위복"},
+    {q:"평생 단 한 번뿐인 만남", a:"일기일회"}, {q:"뜻이 맞아 서로 잘 통함", a:"의기투합"},
+    {q:"나아갈 수도 물러설 수도 없음", a:"진퇴양난"}, {q:"형편이 서로 비슷함", a:"오십보백보"},
+    {q:"아무 쓸모가 없음", a:"무용지물"}, {q:"금방이라도 터질 듯한 위기", a:"일촉즉발"},
+    {q:"말과 행동이 일치함", a:"언행일치"}, {q:"사람이 아주 많음", a:"인산인해"},
+    {q:"마음을 합쳐 힘을 모음", a:"합심협력"}, {q:"입은 다르지만 하는 말은 같음", a:"이구동성"},
+    {q:"자나 깨나 잊지 못함", a:"오매불망"}, {q:"하늘이 정해준 인연", a:"천생연분"},
+    {q:"스스로를 속임", a:"자기기만"}, {q:"낮과 밤을 가리지 않고 노력함", a:"주야장천"},
+    {q:"보고 들은 것이 많아 식견이 넓음", a:"다문다독"}, {q:"비단 위에 꽃을 더함", a:"금상첨화"},
+    {q:"가난하지만 편안한 마음", a:"안빈낙도"}, {q:"서로 사랑하고 공경함", a:"상경하애"},
+    {q:"어른을 공경하고 아이를 사랑함", a:"경로효친"}, {q:"정성을 다하면 하늘도 감동함", a:"지성이면 감천"},
+    {q:"오랫동안 준비해 실력을 쌓음", a:"마부작침"}, {q:"성공을 위해 고난을 참음", a:"와신상담"},
+    {q:"자신의 잘못을 뉘우침", a:"개과천선"}, {q:"반드시 바른 길로 돌아옴", a:"사필귀정"},
+    {q:"하나로 똘똘 뭉침", a:"일치단결"}, {q:"눈을 씻고 다시 봄", a:"괄목상대"},
+    {q:"맨손으로 일가를 이룸", a:"자수성가"}, {q:"학문에 매진하여 성과를 거둠", a:"형설지공"},
+    {q:"한 번 보고도 다 앎", a:"일목요연"}, {q:"자유롭고 평화로운 세상", a:"태평연월"},
+    {q:"서로 가르치고 배우며 성장함", a:"교학상장"}, {q:"옳고 그름을 가림", a:"시시비비"},
+    {q:"나라를 걱정하는 마음", a:"우국충정"}, {q:"모든 것이 헛된 꿈", a:"일장춘몽"},
+    {q:"팔짱 끼고 보고만 있음", a:"수수방관"}, {q:"아름답고 좋은 풍경", a:"금수강산"},
+    {q:"하늘과 땅 차이", a:"천양지차"}, {q:"세상의 변화가 매우 빠름", a:"상전벽해"},
+    {q:"매우 총명하고 지혜로움", a:"명석판명"}, {q:"한 번 듣고 열을 ", a:"문일지십"},
+    {q:"용의 머리에 뱀의 꼬리", a:"용두사미"}, {q:"등불을 가까이 하기 좋은 가을", a:"등화가친"},
+    {q:"물 만난 물고기", a:"여어득수"}, {q:"천 가지 생각 중 한 가지 실수", a:"천려일실"},
+    {q:"콩 심은 데 콩 난다", a:"종두득두"}, {q:"사방에 적이 있음", a:"사면초가"},
+    {q:"우물 안 개구리", a:"정저지와"}, {q:"매일매일 새로워짐", a:"일신우일신"},
+    {q:"남을 돕는 것은 나를 돕는 것", a:"자리이타"}, {q:"강한 자가 약한 자를 이김", a:"약육강식"},
+    {q:"부모님 은혜에 보답함", a:"결초보은"}, {q:"뼈를 깎는 노력", a:"각고면려"},
+    {q:"나라를 기울게 할 미인", a:"경국지색"}, {q:"길거리 근거 없는 소문", a:"가담항설"},
+    {q:"여러 가지 꽃이 활짝 핌", a:"백화제방"}, {q:"정직하고 당당함", a:"정정당당"},
+    {q:"아무 말도 못함", a:"유구무언"}, {q:"같은 처지끼리 가게 여김", a:"동병상련"},
+    {q:"공평하고 사사로움이 없음", a:"공명정대"}, {q:"세월이 쏜살같이 빠름", a:"광음여전"},
+    {q:"처음부터 끝까지 한결같음", a:"시종일관"}, {q:"어려움을 극복하고 일어섬", a:"칠전팔기"},
+    {q:"손뼉을 치며 크게 웃음", a:"박장대소"}, {q:"이익을 보고 의리를 생각함", a:"견리망의"},
+    {q:"나쁜 짓을 하면 벌을 받음", a:"인과응보"}, {q:"실속 없는 허상을 뜻함", a:"경화수월"},
+    {q:"죽어도 잊지 못할 큰 은혜", a:"백골난망"}, {q:"신중하게 깊이 생각함", a:"심사숙고"},
+    {q:"귀신같은 기묘한 계산", a:"신기묘산"}, {q:"하늘과 땅 사이의 큰 차이", a:"천양지판"},
+    {q:"불을 보듯 매우 뻔함", a:"명약관화"}, {q:"말이 많으면 자주 궁해짐", a:"다언삭구"},
+    {q:"밝은 달과 시원한 바람", a:"명월청풍"}, {q:"소나무와 대나무 같은 굳은 절개", a:"송죽지절"},
+    {q:"길이 아니면 가지 마라", a:"비도불행"}, {q:"서로 돕는 아름다운 모습", a:"상부상조"},
+    {q:"마음이 편안하고 고요함", a:"안심입명"}
+];
+
+/* -----------------------------------------------------------
+   [로직 영역] 데이터 저장 및 로드 기능 추가
+----------------------------------------------------------- */
+let scoreDaye = { K:0, E:0, T:0, M:0, C:0, L:0, P:0, S:0 };
+let scoreGaram = { K:0, M:0, A:0 };
+let currentUser = "", currentMode = "", mathOp = "+", busy = false;
+let curW = {}, curU = [], logicAns = "";
+let stickerModalShown = false; 
+
+// 브라우저 로컬 스토리지에서 기록 불러오기
+let studyHistory = JSON.parse(localStorage.getItem('studyRecords')) || {};
+
+function saveToStorage(user, points) {
+    let today = new Date().toISOString().split('T')[0]; // 오늘 날짜 YYYY-MM-DD
+    if(!studyHistory[today]) studyHistory[today] = { daye: 0, garam: 0 };
+    
+    if(user === 'daye') studyHistory[today].daye += points;
+    else studyHistory[today].garam += points;
+
+    localStorage.setItem('studyRecords', JSON.stringify(studyHistory));
+}
+
+function showHistory() {
+    const body = document.getElementById('history-body');
+    body.innerHTML = "";
+    const dates = Object.keys(studyHistory).sort().reverse(); // 최신 날짜순
+
+    if(dates.length === 0) {
+        body.innerHTML = "<tr><td colspan='3'>아직 기록이 없어요!</td></tr>";
+    } else {
+        dates.forEach(d => {
+            const row = `<tr><td>${d}</td><td>${studyHistory[d].daye}점</td><td>${studyHistory[d].garam}점</td></tr>`;
+            body.innerHTML += row;
+        });
+    }
+    document.getElementById('history-modal').classList.remove('hidden');
+}
+
+function clearHistory() {
+    if(confirm("정말 모든 기록을 삭제할까요?")) {
+        studyHistory = {};
+        localStorage.removeItem('studyRecords');
+        showHistory();
+    }
+}
+
+function speak(text, lang = 'en-US') {
+    window.speechSynthesis.cancel();
+    const msg = new SpeechSynthesisUtterance(text);
+    msg.lang = lang; msg.rate = 0.95;
+    window.speechSynthesis.speak(msg);
+}
+
+function chooseUser(user) {
+    currentUser = user;
+    const docEl = document.documentElement;
+    if (docEl.requestFullscreen) docEl.requestFullscreen();
+    else if (docEl.webkitRequestFullscreen) docEl.webkitRequestFullscreen();
+    
+    document.getElementById("integrated-start").classList.add("hidden");
+    if(user === 'daye') {
+        document.getElementById("daye-section").classList.remove("hidden");
+        updateTotalProgressDaye();
+    } else {
+        document.getElementById("garam-section").classList.remove("hidden");
+        updateTotalProgressGaram();
+    }
+}
+
+function exitToMain() { location.reload(); }
+
+function showStickerModal() {
+    if(!stickerModalShown) {
+        document.getElementById("sticker-modal").classList.remove("hidden");
+        stickerModalShown = true;
+    }
+}
+function closeStickerModal() {
+    document.getElementById("sticker-modal").classList.add("hidden");
+}
+
+function checkCategoryMilestone(user, mode, score) {
+    if (score >= 100) {
+        return "🎉 우와! 100점 달성! 정말 최고야!";
+    }
+    return user === 'daye' ? "🌟 정답이야!" : "참 잘했어요! 🌟";
+}
+
+function updateTotalProgressDaye() {
+    const keys = Object.keys(scoreDaye);
+    let currentSum = 0;
+    keys.forEach(k => currentSum += Math.min(scoreDaye[k], 100));
+    let percent = Math.floor((currentSum / (keys.length * 100)) * 100);
+    document.getElementById("progress-bar-daye").style.width = percent + "%";
+    document.getElementById("progress-text-daye").innerText = `다예 전체 목표: ${percent}%`;
+    if(percent >= 100) showStickerModal();
+}
+
+function updateTotalProgressGaram() {
+    const keys = Object.keys(scoreGaram);
+    let currentSum = 0;
+    keys.forEach(k => currentSum += Math.min(scoreGaram[k], 100));
+    let percent = Math.floor((currentSum / (keys.length * 100)) * 100);
+    document.getElementById("progress-bar-garam").style.width = percent + "%";
+    document.getElementById("progress-text-garam").innerText = `가람 전체 목표: ${percent}%`;
+    if(percent >= 100) showStickerModal();
+}
+
+/* --- 다예 학습 기능 --- */
+function goHomeDaye() {
+    document.getElementById("menu-daye").classList.remove("hidden");
+    document.getElementById("game-screen-daye").classList.add("hidden");
+    document.getElementById("math-menu-daye").classList.add("hidden");
+    busy = false;
+}
+function showMathMenu() {
+    document.getElementById("menu-daye").classList.add("hidden");
+    document.getElementById("math-menu-daye").classList.remove("hidden");
+}
+function initGameDaye(m, title, color) {
+    currentMode = m;
+    document.getElementById("menu-daye").classList.add("hidden");
+    document.getElementById("game-screen-daye").classList.remove("hidden");
+    document.getElementById("game-title-daye").innerText = title;
+    document.getElementById("q-box-daye").style.borderColor = color;
+    document.getElementById("game-score-daye").innerText = scoreDaye[m];
+    document.getElementById("message-daye").innerText = "";
+    busy = false;
+}
+function updateDayeScore() {
+    document.getElementById("game-score-daye").innerText = scoreDaye[currentMode];
+    updateTotalProgressDaye();
+}
+
+function startK() { initGameDaye("K", "한글 천재 다예!", "#ff80ab"); nextK(); }
+function nextK() {
+    busy = false; curU = [];
+    curW = masterData[Math.floor(Math.random()*masterData.length)];
+    setupCanvas(curW.i);
+    document.getElementById("answer-display-daye").innerText = [...curW.w].map(()=>"_").join(" ");
+    document.getElementById("choices-daye").innerHTML = "";
+    let opts = [...curW.w];
+    const pool = "가나다라마바사아자차카타파하거너더러머버서어저처커터퍼허고노도로모보소오조초코토포호".split("");
+    while(opts.length < 9) {
+        let rd = pool[Math.floor(Math.random()*pool.length)];
+        if(!opts.includes(rd)) opts.push(rd);
+    }
+    opts.sort(()=>Math.random()-0.5).forEach(ch => {
+        const b = createBtn(ch, "choice-btn");
+        b.onclick = () => {
+            if(busy) return;
+            curU.push(ch); b.style.visibility="hidden";
+            document.getElementById("answer-display-daye").innerText = curU.join(" ");
+            if(curU.length === curW.w.length) {
+                if(curU.join("") === curW.w) {
+                    busy=true; scoreDaye["K"]+=10; saveToStorage('daye', 10);
+                    msgDaye(checkCategoryMilestone('daye','K',scoreDaye["K"])); 
+                    updateDayeScore(); setTimeout(nextK, 1200);
+                } else {
+                    scoreDaye["K"]=Math.max(0, scoreDaye["K"]-5); msgDaye("다시 해보자!"); updateDayeScore();
+                    setTimeout(() => {
+                        curU = []; document.getElementById("answer-display-daye").innerText = [...curW.w].map(()=>"_").join(" ");
+                        Array.from(document.getElementById("choices-daye").children).forEach(btn => btn.style.visibility="visible");
+                    }, 1000);
+                }
+            }
+        };
+        document.getElementById("choices-daye").appendChild(b);
+    });
+}
+function startE() { initGameDaye("E", "영어 단어 박사!", "#9ccc65"); nextE(); }
+function nextE() {
+    busy = false; curW = masterData[Math.floor(Math.random()*masterData.length)];
+    setupCanvas(curW.i);
+    document.getElementById("answer-display-daye").innerText = "What is this?";
+    document.getElementById("choices-daye").innerHTML = "";
+    let opts = [curW.e];
+    while(opts.length < 4) {
+        let rd = masterData[Math.floor(Math.random()*masterData.length)].e;
+        if(!opts.includes(rd)) opts.push(rd);
+    }
+    opts.sort(()=>Math.random()-0.5).forEach(word => {
+        const b = createBtn(word, "choice-btn"); b.style.minWidth = "120px"; b.style.fontSize="18px";
+        b.onclick = () => {
+            if(busy || b.classList.contains("wrong")) return;
+            speak(word);
+            if(word === curW.e) {
+                busy=true; scoreDaye["E"]+=10; saveToStorage('daye', 10); b.classList.add("correct"); 
+                msgDaye(checkCategoryMilestone('daye','E',scoreDaye["E"])); 
+                updateDayeScore(); setTimeout(nextE, 1200);
+            } else {
+                scoreDaye["E"]=Math.max(0, scoreDaye["E"]-5); b.classList.add("wrong"); updateDayeScore();
+            }
+        };
+        document.getElementById("choices-daye").appendChild(b);
+    });
+}
+function startTalk() { initGameDaye("T", "영어 회화 술술!", "#4dd0e1"); nextTalk(); }
+function nextTalk() {
+    busy=false; hideCanvas();
+    let qObj = talkData[Math.floor(Math.random()*talkData.length)];
+    document.getElementById("problem-text-daye").innerText = qObj.q;
+    document.getElementById("answer-display-daye").innerText = "영어로 말하면?";
+    document.getElementById("choices-daye").innerHTML = "";
+    let opts = [qObj.a];
+    while(opts.length < 3) {
+        let rd = talkData[Math.floor(Math.random()*talkData.length)].a;
+        if(!opts.includes(rd)) opts.push(rd);
+    }
+    opts.sort(()=>Math.random()-0.5).forEach(ans => {
+        const b = createBtn(ans, "choice-btn long-text-btn");
+        b.onclick = () => {
+            if(busy || b.classList.contains("wrong")) return;
+            speak(ans);
+            if(ans === qObj.a) {
+                busy=true; scoreDaye["T"]+=10; saveToStorage('daye', 10); b.classList.add("correct"); 
+                msgDaye(checkCategoryMilestone('daye','T',scoreDaye["T"])); 
+                updateDayeScore(); setTimeout(nextTalk, 1500);
+            } else {
+                scoreDaye["T"]=Math.max(0, scoreDaye["T"]-5); b.classList.add("wrong"); updateDayeScore();
+            }
+        };
+        document.getElementById("choices-daye").appendChild(b);
+    });
+}
+function startMathType(op) {
+    mathOp = op; document.getElementById("math-menu-daye").classList.add("hidden");
+    initGameDaye("M", `수학 천재 (${op})`, "#81d4fa"); nextM();
+}
+function nextM() {
+    busy = false; hideCanvas();
+    document.getElementById("answer-display-daye").innerText = "? 에 들어갈 숫자는?";
+    document.getElementById("choices-daye").innerHTML = "";
+    let a, b, ans;
+    if(mathOp === '+') { a = Math.floor(Math.random()*20)+1; b = Math.floor(Math.random()*20)+1; ans = a+b; }
+    else if(mathOp === '-') { a = Math.floor(Math.random()*25)+10; b = Math.floor(Math.random()*a); ans = a-b; }
+    else { a = Math.floor(Math.random()*8)+2; b = Math.floor(Math.random()*9)+1; ans = a*b; }
+    document.getElementById("problem-text-daye").innerText = `${a} ${mathOp} ${b} = ?`;
+    let cs = [ans];
+    while(cs.length < 4) {
+        let w = ans + (Math.floor(Math.random()*9) - 4);
+        if(w >= 0 && !cs.includes(w)) cs.push(w);
+    }
+    cs.sort(()=>Math.random()-0.5).forEach(n => {
+        const b = createBtn(n, "choice-btn");
+        b.onclick = () => {
+            if(busy || b.classList.contains("wrong")) return;
+            if(n === ans) {
+                busy=true; scoreDaye["M"]+=10; saveToStorage('daye', 10); b.classList.add("correct"); 
+                msgDaye(checkCategoryMilestone('daye','M',scoreDaye["M"])); 
+                updateDayeScore(); setTimeout(nextM, 1200);
+            } else {
+                scoreDaye["M"]=Math.max(0, scoreDaye["M"]-5); b.classList.add("wrong"); updateDayeScore();
+            }
+        };
+        document.getElementById("choices-daye").appendChild(b);
+    });
+}
+function startC() { initGameDaye("C", "시계 척척 박사!", "#ba68c8"); nextC(); }
+function nextC() {
+    busy=false; setupCanvas("");
+    document.getElementById("answer-display-daye").innerText = "몇 시 몇 분일까요?";
+    document.getElementById("choices-daye").innerHTML = "";
+    let h = Math.floor(Math.random()*12)+1, m = Math.floor(Math.random()*2)*30, ansStr = m===0 ? `${h}시 정각` : `${h}시 30분`;
+    drawClock(h, m);
+    let opts = [ansStr];
+    while(opts.length<4){
+        let fh = Math.floor(Math.random()*12)+1, fm = Math.floor(Math.random()*2)*30, fs = fm===0 ? `${fh}시 정각` : `${fh}시 30분`;
+        if(!opts.includes(fs)) opts.push(fs);
+    }
+    opts.sort(()=>Math.random()-0.5).forEach(txt => {
+        const b = createBtn(txt, "choice-btn"); b.style.minWidth="130px";
+        b.onclick = () => {
+            if(busy || b.classList.contains("wrong")) return;
+            if(txt === ansStr) {
+                busy=true; scoreDaye["C"]+=10; saveToStorage('daye', 10); b.classList.add("correct"); 
+                msgDaye(checkCategoryMilestone('daye','C',scoreDaye["C"])); 
+                updateDayeScore(); setTimeout(nextC, 1200);
+            } else {
+                scoreDaye["C"]=Math.max(0, scoreDaye["C"]-5); b.classList.add("wrong"); updateDayeScore();
+            }
+        };
+        document.getElementById("choices-daye").appendChild(b);
+    });
+}
+function startL() { initGameDaye("L", "규칙 탐정 다예!", "#ff8a65"); nextL(); }
+function nextL() {
+    busy=false; hideCanvas();
+    document.getElementById("answer-display-daye").innerText = "다음에 올 모양은?";
+    document.getElementById("choices-daye").innerHTML = "";
+    let i1 = masterData[Math.floor(Math.random()*masterData.length)].i, i2 = masterData[Math.floor(Math.random()*masterData.length)].i;
+    while(i1===i2) i2 = masterData[Math.floor(Math.random()*masterData.length)].i;
+    let type = Math.floor(Math.random()*2);
+    let qStr = type === 0 ? `${i1} ${i2} ${i1} ?` : `${i1} ${i1} ${i2} ${i1} ?`;
+    logicAns = type === 0 ? i2 : i1;
+    document.getElementById("problem-text-daye").innerText = qStr;
+    let opts = [i1, i2];
+    opts.sort(()=>Math.random()-0.5).forEach(icon => {
+        const b = createBtn(icon, "choice-btn");
+        b.onclick = () => {
+            if(busy || b.classList.contains("wrong")) return;
+            if(icon === logicAns) {
+                busy=true; scoreDaye["L"]+=10; saveToStorage('daye', 10); b.classList.add("correct"); 
+                msgDaye(checkCategoryMilestone('daye','L',scoreDaye["L"])); 
+                updateDayeScore(); setTimeout(nextL, 1200);
+            } else {
+                scoreDaye["L"]=Math.max(0, scoreDaye["L"]-5); b.classList.add("wrong"); updateDayeScore();
+            }
+        };
+        document.getElementById("choices-daye").appendChild(b);
+    });
+}
+function startP() { initGameDaye("P", "속담 박사 다예!", "#ffab91"); nextP(); }
+function nextP() {
+    busy=false; hideCanvas();
+    let qObj = proverbData[Math.floor(Math.random()*proverbData.length)];
+    document.getElementById("problem-text-daye").innerText = qObj.q;
+    document.getElementById("answer-display-daye").innerText = "알맞은 속담은?";
+    document.getElementById("choices-daye").innerHTML = "";
+    let opts = [qObj.a];
+    while(opts.length < 3) {
+        let rd = proverbData[Math.floor(Math.random()*proverbData.length)].a;
+        if(!opts.includes(rd)) opts.push(rd);
+    }
+    opts.sort(()=>Math.random()-0.5).forEach(ans => {
+        const b = createBtn(ans, "choice-btn long-text-btn");
+        b.onclick = () => {
+            if(busy || b.classList.contains("wrong")) return;
+            speak(ans, 'ko-KR');
+            if(ans === qObj.a) {
+                busy=true; scoreDaye["P"]+=10; saveToStorage('daye', 10); b.classList.add("correct"); 
+                msgDaye(checkCategoryMilestone('daye','P',scoreDaye["P"])); 
+                updateDayeScore(); setTimeout(nextP, 1500);
+            } else {
+                scoreDaye["P"]=Math.max(0, scoreDaye["P"]-5); b.classList.add("wrong"); updateDayeScore();
+            }
+        };
+        document.getElementById("choices-daye").appendChild(b);
+    });
+}
+function startS() { initGameDaye("S", "사자성어 척척!", "#b39ddb"); nextS(); }
+function nextS() {
+    busy=false; hideCanvas();
+    let qObj = idiomData[Math.floor(Math.random()*idiomData.length)];
+    document.getElementById("problem-text-daye").innerText = qObj.q;
+    document.getElementById("answer-display-daye").innerText = "뜻에 맞는 사자성어?";
+    document.getElementById("choices-daye").innerHTML = "";
+    let opts = [qObj.a];
+    while(opts.length < 3) {
+        let rd = idiomData[Math.floor(Math.random()*idiomData.length)].a;
+        if(!opts.includes(rd)) opts.push(rd);
+    }
+    opts.sort(()=>Math.random()-0.5).forEach(ans => {
+        const b = createBtn(ans, "choice-btn long-text-btn");
+        b.onclick = () => {
+            if(busy || b.classList.contains("wrong")) return;
+            speak(ans, 'ko-KR');
+            if(ans === qObj.a) {
+                busy=true; scoreDaye["S"]+=10; saveToStorage('daye', 10); b.classList.add("correct"); 
+                msgDaye(checkCategoryMilestone('daye','S',scoreDaye["S"])); 
+                updateDayeScore(); setTimeout(nextS, 1500);
+            } else {
+                scoreDaye["S"]=Math.max(0, scoreDaye["S"]-5); b.classList.add("wrong"); updateDayeScore();
+            }
+        };
+        document.getElementById("choices-daye").appendChild(b);
+    });
+}
+
+/* --- 가람 학습 기능 --- */
+const dataGaram = {
+K: masterData,
+A: [
+{w:"APPLE",i:"🍎",f:"A"},{w:"ANT",i:"🐜",f:"A"},{w:"BALL",i:"⚽",f:"B"},{w:"BEAR",i:"🐻",f:"B"},
+{w:"CAT",i:"🐱",f:"C"},{w:"CAR",i:"🚗",f:"C"},{w:"DOG",i:"🐶",f:"D"},{w:"DUCK",i:"🦆",f:"D"},
+{w:"EGG",i:"🥚",f:"E"},{w:"ELEPHANT",i:"🐘",f:"E"},{w:"FISH",i:"🐟",f:"F"},{w:"FROG",i:"🐸",f:"F"},
+{w:"GRAPE",i:"🍇",f:"G"},{w:"GOAT",i:"🐐",f:"G"},{w:"HAT",i:"🎩",f:"H"},{w:"HORSE",i:"🐴",f:"H"},
+{w:"ICE",i:"🧊",f:"I"},{w:"IGLOO",i:"🏠",f:"I"},{w:"JUICE",i:"🧃",f:"J"},{w:"JELLY",i:"🍬",f:"J"},
+{w:"KITE",i:"🪁",f:"K"},{w:"KEY",i:"🔑",f:"K"},{w:"LION",i:"🦁",f:"L"},{w:"LEMON",i:"🍋",f:"L"},
+{w:"MOON",i:"🌙",f:"M"},{w:"MILK",i:"🥛",f:"M"},{w:"NOSE",i:"👃",f:"N"},{w:"NEST",i:"🪺",f:"N"},
+{w:"ORANGE",i:"🍊",f:"O"},{w:"OWL",i:"🦉",f:"O"},{w:"PIG",i:"🐷",f:"P"},{w:"PIZZA",i:"🍕",f:"P"},
+{w:"QUEEN",i:"👑",f:"Q"},{w:"RABBIT",i:"🐰",f:"R"},{w:"SUN",i:"☀️",f:"S"},{w:"STAR",i:"⭐",f:"S"},
+{w:"TREE",i:"🌳",f:"T"},{w:"TRAIN",i:"🚆",f:"T"},{w:"UMBRELLA",i:"☂️",f:"U"},{w:"VIOLIN",i:"🎻",f:"V"},
+{w:"WHALE",i:"🐳",f:"W"},{w:"XYLOPHONE",i:"🎶",f:"X"},{w:"YOGURT",i:"🥣",f:"Y"},{w:"ZEBRA",i:"🦓",f:"Z"}
+]
+};
+
+function goHomeGaram() {
+    document.getElementById("menu-garam").classList.remove("hidden");
+    document.getElementById("game-screen-garam").classList.add("hidden");
+}
+function initGameGaram(m) {
+    currentMode = m;
+    document.getElementById("menu-garam").classList.add("hidden");
+    document.getElementById("game-screen-garam").classList.remove("hidden");
+    document.getElementById("game-score-garam").innerText = scoreGaram[m];
+    document.getElementById("message-garam").innerText = "";
+    nextQuizGaram();
+}
+function updateGaramScore() {
+    document.getElementById("game-score-garam").innerText = scoreGaram[currentMode];
+    updateTotalProgressGaram();
+}
+function nextQuizGaram() {
+    busy = false;
+    document.getElementById("choices-garam").innerHTML = "";
+    document.getElementById("message-garam").innerText = "";
+    document.getElementById("emoji-display-garam").innerText = "";
+
+    if(currentMode === "K") {
+        let q = dataGaram.K[Math.random()*dataGaram.K.length | 0];
+        document.getElementById("emoji-display-garam").innerText = q.i;
+        document.getElementById("problem-text-garam").innerText = "";
+        let o = [q.w];
+        while(o.length < 3){
+            let r = dataGaram.K[Math.random()*dataGaram.K.length | 0].w;
+            if(!o.includes(r)) o.push(r);
+        }
+        renderGaramButtons(o, q.w);
+    } 
+    else if(currentMode === "M") {
+        document.getElementById("emoji-display-garam").innerText = "➕";
+        let a = Math.floor(Math.random() * 8) + 1;
+        let b = Math.floor(Math.random() * (10 - a)) + 1;
+        let ans = a + b;
+        document.getElementById("problem-text-garam").innerText = `${a} + ${b} = ?`;
+        let o = [ans];
+        while(o.length < 3){
+            let r = Math.floor(Math.random() * 10) + 1;
+            if(!o.includes(r)) o.push(r);
+        }
+        renderGaramButtons(o, ans);
+    }
+    else if(currentMode === "A") {
+        let q = dataGaram.A[Math.random()*dataGaram.A.length | 0];
+        document.getElementById("emoji-display-garam").innerText = q.i;
+        document.getElementById("problem-text-garam").innerText = "_" + q.w.slice(1);
+        speak(q.w,'en-US');
+        let o = [q.f];
+        let abc = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
+        while(o.length < 3){
+            let r = abc[Math.random()*26 | 0];
+            if(!o.includes(r)) o.push(r);
+        }
+        renderGaramButtons(o, q.f, true);
+    }
+}
+function renderGaramButtons(arr, correct, isEng=false) {
+    arr.sort(()=>Math.random()-0.5).forEach(v => {
+        const b = document.createElement("button");
+        b.className = "choice-btn"; b.innerText = v;
+        b.onclick = () => {
+            if(busy) return;
+            if(isEng) speak(v,'en-US');
+            if(v == correct) {
+                busy=true; scoreGaram[currentMode]+=10; saveToStorage('garam', 10);
+                b.style.background="#66bb6a"; b.style.color="white";
+                document.getElementById("message-garam").innerText = checkCategoryMilestone('garam', currentMode, scoreGaram[currentMode]);
+                updateGaramScore(); setTimeout(nextQuizGaram, 1200);
+            } else {
+                scoreGaram[currentMode]=Math.max(0, scoreGaram[currentMode]-2);
+                b.style.background="#ef5350"; b.style.color="white";
+                document.getElementById("message-garam").innerText = "다시 해볼까?"; updateGaramScore();
+            }
+        };
+        document.getElementById("choices-garam").appendChild(b);
+    });
+}
+
+/* [유틸리티] */
+function setupCanvas(icon) {
+    document.getElementById("quiz-canvas").classList.remove("hidden");
+    document.getElementById("problem-text-daye").classList.add("hidden");
+    const cvs = document.getElementById("quiz-canvas");
+    const ctx = cvs.getContext("2d");
+    ctx.clearRect(0,0,300,150); ctx.font="75px serif"; ctx.textAlign="center"; ctx.textBaseline="middle";
+    ctx.fillText(icon, 150, 80);
+}
+function hideCanvas() {
+    document.getElementById("quiz-canvas").classList.add("hidden");
+    document.getElementById("problem-text-daye").classList.remove("hidden");
+}
+function drawClock(h, m) {
+    const cvs = document.getElementById("quiz-canvas");
+    const ctx = cvs.getContext("2d");
+    ctx.clearRect(0,0,300,150);
+    let cx=150, cy=75, rad=65;
+    ctx.beginPath(); ctx.arc(cx, cy, rad, 0, 2*Math.PI);
+    ctx.fillStyle = "white"; ctx.fill(); ctx.lineWidth = 4; ctx.strokeStyle = "#ba68c8"; ctx.stroke();
+    for(let i=1; i<=12; i++) {
+        let ang = (i*30) * Math.PI/180;
+        ctx.fillStyle = "#333"; ctx.font = "bold 12px sans-serif"; ctx.textAlign="center";
+        ctx.fillText(i, cx + (rad-12)*Math.sin(ang), cy - (rad-12)*Math.cos(ang));
+    }
+    let hAng = ((h%12)*30 + m*0.5) * Math.PI/180;
+    ctx.beginPath(); ctx.lineWidth=6; ctx.lineCap="round"; ctx.strokeStyle="black";
+    ctx.moveTo(cx, cy); ctx.lineTo(cx + (rad-30)*Math.sin(hAng), cy - (rad-30)*Math.cos(hAng)); ctx.stroke();
+    let mAng = (m*6) * Math.PI/180;
+    ctx.beginPath(); ctx.lineWidth=4; ctx.strokeStyle="#e91e63";
+    ctx.moveTo(cx, cy); ctx.lineTo(cx + (rad-15)*Math.sin(mAng), cy - (rad-15)*Math.cos(mAng)); ctx.stroke();
+}
+function createBtn(txt, cls) { 
+    const b = document.createElement("button"); b.className=cls; b.innerText=txt; return b; 
+}
+function msgDaye(t) { document.getElementById("message-daye").innerText = t; }
+</script>
+</body>
+</html>
